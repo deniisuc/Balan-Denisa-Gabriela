@@ -1,49 +1,54 @@
-%Numar de ordine:1
-%Semnal dreptunghiular
-%Perioada P = 40 s
-%Durata semnalelor D = 1
-%Numar de coeficienti = 50
+N = 50; % numarul de coeficienti
+D = 1; % durata
+P = 40; % perioada
+F=1/P; % frecventa 
+w0=2*pi/P; % pulsatia
+t=0:0.02:P-0.02; % timpul pe care calculam integrala (o perioada); 
+                 % rezolutia temporala trebuie sa fie de 2 ori mai mica decat perioada semnalului (teorema esantionarii);
+% semnalul dreptungiular original
+x = zeros(1,size(t,2)); % initializarea lui x cu zerouri
+x(t<=D/2) =1; % de la 0 la D/2 x are valoarea 1
+x(t>P-D/2) =1; % de la D/2 la P x are valoarea 1
+t_4perioade = 0:0.02:4*P-0.02; % vectorul timp pentru reprezentarea pe 4 perioade
+x_4perioade = repmat(x,1,4); % vectorul x pentru reprezentarea pe 4 perioade
+   
+% integrala numerica prin functia trapz
+for k = -N:N
+    x_temp = x;
+    x_temp = x_temp.*exp(-j*k*w0*t); % vectorul inmultit cu termenul corespunzator
+    X(k+51) = trapz(t,x_temp); % trapz calculeaza integrala prin metoda trapezului 
+    %(imparte suprafata in forme trapezoidale pentru a calcula mai usor aria)
+end
 
-P = 40; 
-D = 1; 
-N = 50;
-w0 = 2*pi/P; %pulsatia unghiulara a semnalului
-t_tr = 0:0.02:D; %esantionarea semnalului original
-x_tr = (1-D)*square(pi*t_tr,D*100)-D; %semnalul dreptunghiular original
-t = 0:0.02:P; %esantionarea semnalului modificat
-x = zeros(1,length(t)); %initializare a semnalului modificat cu valori nule
-x(t<=D) = x_tr; %valorile nule se modifica cu valori din semnalul original, t<=D
-                
+x_refacut(1:length(t)) = 0; % initializarea semnalului reconstruit cu N puncte
+
+%reconstructia lui x(t) folosind N coeficienti
+for index = 1:length(t);
+for k = -N:N
+x_refacut(index) = x_refacut(index) + (1/P)*X(k+N+1)*exp(j*k*w0*t(index));
+end
+end
+
 figure(1);
-%afisare x(t)
-plot(t,x),title('x(t)(linie solida) si reconstructia folosind N coeficienti (linie punctata)'); 
-hold on;
+plot(t_4perioade,x_4perioade); % afisarea lui x(t)
+title('x(t) cu linie solida si reconstructia folosind coeficientii(linie punctata)');
+hold on
+x_refacut_4perioade = repmat(x_refacut,1,4); % generarea lui x reconstruit pentru 4 perioade
+plot(t_4perioade,x_refacut_4perioade,'--'); % afisarea lui x reconstruit pentru 4 perioade
+xlabel('Timp [s]');
+ylabel('Amplitudine');
 
-%k este variabila dupa care se realizeaza suma
-for k = -N:N 
-    x_t = x_tr; %x_t e semnalul realizat dupa formula SF data
-    x_t = x_t .* exp(-1i*k*w0*t_tr); %inmultire intre doua matrice element cu element
-    X(k+N+1) = 0; %initialzat nul
-    for i = 1:length(t_tr)-1
-        X(k+N+1) = X(k+N+1) + (t_tr(i+1)-t_tr(i)) * (x_t(i)+x_t(i+1))/2; %reconstructia cu coeficientii
-    end
-end
-
-for i = 1:length(t) %i este variabila dupa care se realizeaza suma
-    x_finit(i) = 0; %initializat nul
-    for k=-N:N
-        x_finit(i) = x_finit(i) + (1/P) * X(k+51) * exp(1i*k*w0*t(i));  %reconstructia cu coeficientii
-    end
-end
-plot(t,x_finit,'--'); %afisare reconstructie semnal folosind cei N coeficienti
-
+f = -N*F:F:N*F; % generarea vectorului de frecvente
 figure(2);
-w=-50*w0:w0:50*w0; %w este vectorul ce ne va permite afisarea spectrului functiei
-stem(w/(2*pi),abs(X)),title('Spectrul lui x(t)'); %afisarea spectrului
+stem(f,abs(X)); % afisarea lui X
+title('Spectrul lui x(t)');
+xlabel('Frecventa [Hz]');
+ylabel('|X|');
 
-%Observam ca semnalul reconstruit foloseste un numar finit de termeni N=50,
+
+%Pe baza cunostintelor dobandite la SS, observam ca semnalul reconstruit 
 %se apropie de semnalul original,este o aproximat printr-o suma infinita de
 %sinusuri si cosinusuri cu diferite frecvente si coeficienti depinzand de
-%paritate si aceste se apropie de semnalul original cu o marja de eroare
-%datorata aproximarii. Aceste variatii au caracter sinusoidal.
-
+%paritate si acestea se apropie de semnalul original cu o marja de eroare
+%datorata aproximarii, de asemeni este folosesit un numar finit de termeni N=50.
+%Aceste variatii au caracter sinusoidal, adica aproximarile.
